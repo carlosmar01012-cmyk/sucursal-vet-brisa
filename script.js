@@ -1,113 +1,59 @@
 "use strict";
 
-document.body.classList.add("js");
+const filters = document.querySelectorAll("[data-filter]");
+const guides = document.querySelectorAll("[data-species]");
 
-const menuButton = document.querySelector(".menu-button");
-const navigation = document.querySelector("#navigation");
+filters.forEach((button) => {
+  button.addEventListener("click", () => {
+    const filter = button.dataset.filter;
+    let visible = 0;
 
-function closeMenu() {
-  navigation.classList.remove("open");
-  menuButton.setAttribute("aria-expanded", "false");
-  menuButton.textContent = "Menú";
-}
+    filters.forEach((item) => {
+      item.setAttribute("aria-pressed", String(item === button));
+    });
 
-menuButton.addEventListener("click", () => {
-  const isOpen = navigation.classList.toggle("open");
-  menuButton.setAttribute("aria-expanded", String(isOpen));
-  menuButton.textContent = isOpen ? "Cerrar" : "Menú";
-});
+    guides.forEach((guide) => {
+      const show =
+        filter === "todos" ||
+        guide.dataset.species === "ambos" ||
+        guide.dataset.species === filter;
 
-navigation.querySelectorAll("a").forEach((link) => {
-  link.addEventListener("click", closeMenu);
-});
+      guide.hidden = !show;
+      if (show) visible++;
+    });
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && navigation.classList.contains("open")) {
-    closeMenu();
-    menuButton.focus();
-  }
-});
-
-const serviceSelect = document.querySelector("#visit-service");
-
-document.querySelectorAll("[data-service]").forEach((link) => {
-  link.addEventListener("click", () => {
-    serviceSelect.value = link.dataset.service;
+    document.querySelector("#filter-status").textContent =
+      `${visible} guías disponibles`;
   });
 });
 
-const form = document.querySelector("#visit-form");
-const summaryPanel = document.querySelector("#summary-panel");
-const summary = document.querySelector("#visit-summary");
-const copyStatus = document.querySelector("#copy-status");
+document.querySelectorAll(".quiz article").forEach((card) => {
+  card.querySelectorAll("[data-answer]").forEach((button) => {
+    button.addEventListener("click", () => {
+      card.querySelectorAll("[data-answer]").forEach((item) => {
+        item.setAttribute("aria-pressed", String(item === button));
+      });
 
-form.addEventListener("input", () => {
-  summaryPanel.hidden = true;
-  copyStatus.textContent = "";
+      const feedback = card.querySelector(".feedback");
+      const explanation = card.querySelector(".explanation");
+
+      feedback.textContent =
+        button.dataset.answer === "correcto"
+          ? "¡Correcto!"
+          : "Revisa esta explicación:";
+
+      feedback.hidden = false;
+      explanation.hidden = false;
+    });
+  });
 });
 
-form.addEventListener("change", () => {
-  summaryPanel.hidden = true;
-  copyStatus.textContent = "";
-});
-
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-
-  const nameInput = document.querySelector("#pet-name");
-  const notesInput = document.querySelector("#visit-notes");
-
-  const name = nameInput.value.trim();
-  const notes = notesInput.value.trim();
-
-  nameInput.setCustomValidity(name ? "" : "Escribe el nombre de tu mascota.");
-  notesInput.setCustomValidity(notes ? "" : "Escribe tus observaciones o preguntas.");
-
-  if (!form.reportValidity()) {
-    return;
-  }
-
-  const species = document.querySelector("#pet-species").value;
-  const service = serviceSelect.value;
-
-  summary.textContent = [
-    "FICHA PARA MI VISITA",
-    "",
-    `Mascota: ${name}`,
-    `Especie: ${species}`,
-    `Tema: ${service}`,
-    "",
-    "Observaciones y preguntas:",
-    notes,
-    "",
-    "Esta ficha no confirma una cita ni constituye una evaluación médica."
-  ].join("\n");
-
-  summaryPanel.hidden = false;
-  copyStatus.textContent = "Resumen preparado. Puedes copiarlo o seleccionar el texto.";
-});
-
-document.querySelectorAll("#pet-name, #visit-notes").forEach((input) => {
-  input.addEventListener("input", () => input.setCustomValidity(""));
-});
-
-document.querySelector("#copy-summary").addEventListener("click", async () => {
-  try {
-    if (!navigator.clipboard) {
-      throw new Error("Portapapeles no disponible");
-    }
-
-    await navigator.clipboard.writeText(summary.textContent);
-    copyStatus.textContent = "Resumen copiado.";
-  } catch {
-    const selection = window.getSelection();
-    const range = document.createRange();
-
-    range.selectNodeContents(summary);
-    selection.removeAllRanges();
-    selection.addRange(range);
-
-    copyStatus.textContent =
-      "El navegador no permitió copiar automáticamente. El texto está seleccionado: usa Ctrl + C o la opción Copiar de tu celular.";
-  }
+document.querySelector("#reset").addEventListener("click", () => {
+  document.querySelectorAll(".quiz article").forEach((card) => {
+    card.querySelectorAll("[data-answer]").forEach((button) => {
+      button.setAttribute("aria-pressed", "false");
+    });
+    card.querySelector(".feedback").hidden = true;
+    card.querySelector(".explanation").hidden = true;
+  });
 });
